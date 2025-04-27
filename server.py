@@ -7,18 +7,16 @@ server_conn.bind(("127.0.0.1", 23456))
 server_conn.listen()
 conn, addr = server_conn.accept()
 
+TCP_FLAG = ["SYN", "SYN-ACK", "ACK"]
+
 with conn:
     print(f'Connection initiated with {addr}')
 
     while True:
         try:
             # Receive
-            data = conn.recv(1024)
-            data_dec = data.decode("utf-8")
-
-            print(f"Server received data: {data_dec}")
-
-            
+            d = conn.recv(1024)
+            data = d.decode("utf-8")
 
             # breaks loop if data is empty
             if not data: 
@@ -26,16 +24,14 @@ with conn:
                 break
 
             # Send
+            if data == TCP_FLAG[0]:
+                print(f"\n[2] {TCP_FLAG[1]}: Server -> Client")
+                conn.send(bytes(TCP_FLAG[1], "utf-8"))
+                print(f"Server waiting for {TCP_FLAG[2]}...")
+            if data == TCP_FLAG[2]:
+                print("\nTCP Connection Established! 🎉")
 
-            if data_dec == "SYN":
-                print("\n[2] SYN: Server -> Client")
-                conn.send(bytes("SYN-ACK", "utf-8"))
-                print("Server waiting for ACK...")
-            if data_dec == "ACK":
-                print("\nTCP Connection initiated!")
-
-            # print("Sending this back to the client..")
-            # conn.sendall(data)
+            print(f"DEBUG: Data received from client: {data}")
 
         except KeyboardInterrupt:
             print("\nERROR - Keyboard Interrupt")

@@ -4,42 +4,50 @@ import sys
 client_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_conn.connect(("localhost", 23456))
 
-while True:
-    print("\nSelect an option: \n[1] - Establish TCP connection \n[2] - Send data")
+TCP_FLAG = ["SYN", "SYN-ACK", "ACK"]
+FLAGS = {"CWR":0, "ECE":0, "URG":0, "ACK":0, "PSH":0, "RST":0, "SYN":0, "FIN":0}
+TCP_conn = False
 
+while True:
     try:
+        print("\nSelect an option: \n(1) - Establish TCP connection \n(2) - Send data")
         usr_input = input()
 
         if usr_input == "1":
             # Send
-            print("\n[1] SYN: Client -> Server")
-            client_conn.send(bytes("SYN", "utf-8"))
-            print("Client waiting for SYN-ACK...")
+            print(f"\n[1] {TCP_FLAG[0]}: Client -> Server")
+            FLAGS.update({"ACK":1})
+            client_conn.send(bytes(TCP_FLAG[1], "utf-8"))
+            # TODO: pass dictionary of flags to server via send() but need to serialise data first with json library
+            print(f"Client waiting for {TCP_FLAG[1]}...")
 
             # Receive
-            data = client_conn.recv(1024)
-            decoded_data = data.decode("utf-8")
+            d = client_conn.recv(1024)
+            data = d.decode("utf-8")
 
-            if decoded_data == "SYN-ACK":
-                print("\n3] SYN: Client -> Server")
-                client_conn.send(bytes("ACK", "utf-8"))
+            if data == TCP_FLAG[1]:
+                print(f"\n[3] {TCP_FLAG[2]}: Client -> Server")
+                client_conn.send(bytes(TCP_FLAG[2], "utf-8"))
+                print("\nTCP Connection Established! 🎉")
+                TCP_conn = True
 
-                
-            # need to add in sequence numbers here or something and add if statements for those otherwise i dont think things are gonna work
-
-            print(f"Data received from server: {decoded_data}")
+            print(f"DEBUG: Data received from server: {data}")
+        
         elif usr_input == "2":
-            print("Send message to server")
-            while True:
-                message = input()
-                client_conn.send(bytes(message, "utf-8"))
+            if TCP_conn == True:
+                print("Send message to server. Type EXIT to exit.")
+                while True:
+                    message = input()
+                    if message == "EXIT":
+                        print("Exiting...")
+                        break
+                    client_conn.send(bytes(message, "utf-8"))
+            else:
+                print("\nA TCP connection needs to be established before messages can be transmitted.")
         else:
             print("\nERROR - Invalid selection")
 
     except KeyboardInterrupt:
         print("\nERROR - Keyboard Interrupt")
-        # dont need this, only in server
-        # client_conn.shutdown(socket.SHUT_RDWR)
-        # client_conn.close()
         sys.exit(1)
         break
