@@ -1,4 +1,4 @@
-import socket, sys, json
+import socket, sys, json, time
 from packet import Packet
 
 server_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -37,8 +37,8 @@ with conn:
                 print("[2] SYN-ACK: Server -> Client")
                 s_packet.set_flag("SYN")
                 s_packet.set_flag("ACK")
-                flags_json = json.dumps(s_packet.to_dict())
-                conn.send(bytes(flags_json, "utf-8"))
+                packet_json = json.dumps(s_packet.to_dict())
+                conn.send(bytes(packet_json, "utf-8"))
                 s_packet.clear_flag("SYN")
                 s_packet.clear_flag("ACK")
                 state = S_STATES[2]
@@ -60,19 +60,21 @@ with conn:
                 print("\n--------- Disconnecting TCP connection --------")
                 print("[2] ACK: Server -> Client")
                 s_packet.set_flag("ACK")
-                flags_json = json.dumps(s_packet.to_dict())
-                conn.send(bytes(flags_json, "utf-8"))
+                packet_json = json.dumps(s_packet.to_dict())
+                conn.send(bytes(packet_json, "utf-8"))
                 s_packet.clear_flag("ACK")
                 state = S_STATES[4]
+                time.sleep(0.1) # Small delay to prevent data being sent here and in Closing connection 2 to merge together on the client side
             
             # Closing connection 2
             if state == S_STATES[4]:
                 print("[3] FIN: Server -> Client")
                 s_packet.set_flag("FIN")
-                flags_json = json.dumps(s_packet.to_dict())
-                conn.send(bytes(flags_json, "utf-8"))
+                packet_json = json.dumps(s_packet.to_dict())
+                conn.send(bytes(packet_json, "utf-8"))
                 s_packet.clear_flag("FIN")
                 state = S_STATES[5]
+                print("Server waiting for ACK...")
 
             # Closing connection 3
             if c_packet["flags"]["ACK"] and state == S_STATES[5]:

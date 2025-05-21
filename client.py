@@ -10,7 +10,7 @@ c_packet = Packet()
 
 while True:
     try:
-        print("\nSelect an option: \n(1) - Establish TCP connection \n(2) - Send data \n(3) - Exit client")
+        print("\nSelect an option: \n(1) - Establish TCP connection \n(2) - Send data \n(3) - Terminate connection")
         usr_input = input()
 
         if usr_input == "1":
@@ -20,8 +20,8 @@ while True:
                 print("\n--------- Establishing TCP connection ---------")
                 print("[1] SYN: Client -> Server")
                 c_packet.set_flag("SYN")
-                p = json.dumps(c_packet.to_dict()) # Serialise data, turn dictionary into string
-                client_conn.send(bytes(p, "utf-8"))
+                packet_json = json.dumps(c_packet.to_dict()) # Serialise data, turn dictionary into string
+                client_conn.send(bytes(packet_json, "utf-8"))
                 c_packet.clear_flag("SYN")
                 state = C_STATES[1]
                 print("Client waiting for SYN-ACK...")
@@ -37,10 +37,10 @@ while True:
 
                 # Send ACK to establish connection with server
                 if s_packet["flags"]["SYN"] == 1 and s_packet["flags"]["ACK"] == 1 and state == C_STATES[1]:
-                    print(f"\n[3] ACK: Client -> Server")
+                    print(f"[3] ACK: Client -> Server")
                     c_packet.set_flag("ACK")
-                    p = json.dumps(c_packet.to_dict())
-                    client_conn.send(bytes(p, "utf-8"))
+                    packet_json = json.dumps(c_packet.to_dict())
+                    client_conn.send(bytes(packet_json, "utf-8"))
                     c_packet.clear_flag("ACK")
                     state = C_STATES[2]
                     print("\nTCP Connection Established! 🎉")
@@ -59,12 +59,12 @@ while True:
                         break
                     c_packet.set_flag("ACK")
                     c_packet.data = message
-                    p = json.dumps(c_packet.to_dict())
-                    client_conn.send(bytes(p, "utf-8"))
+                    packet_json = json.dumps(c_packet.to_dict())
+                    client_conn.send(bytes(packet_json, "utf-8"))
                     c_packet.clear_flag("ACK")
             else:
                 print("\nA TCP connection needs to be established before messages can be transmitted.")
-                
+
         elif usr_input == "3":
             while state == C_STATES[2] or state == C_STATES[3] or state == C_STATES[4]:
             
@@ -73,10 +73,11 @@ while True:
                     print("\n--------- Disconnecting TCP connection --------")
                     print("[1] FIN: Client -> Server")
                     c_packet.set_flag("FIN")
-                    p = json.dumps(c_packet.to_dict())
-                    client_conn.send(bytes(p, "utf-8"))
+                    packet_json = json.dumps(c_packet.to_dict())
+                    client_conn.send(bytes(packet_json, "utf-8"))
                     c_packet.clear_flag("FIN")
                     state = C_STATES[3]
+                    print("Client waiting for ACK...")
 
                 # Server data received
                 data = client_conn.recv(1024).decode("utf-8")
@@ -90,13 +91,14 @@ while True:
                 # Closing connection 2
                 if s_packet["flags"]["ACK"] and state == C_STATES[3]:
                     state = C_STATES[4]
+                    print("Client waiting for FIN...")
 
                 # Closing connection 3
                 if s_packet["flags"]["FIN"] and state == C_STATES[4]:
                     print("[4] ACK: Client -> Server")
                     c_packet.set_flag("ACK")
-                    p = json.dumps(c_packet.to_dict())
-                    client_conn.send(bytes(p, "utf-8"))
+                    packet_json = json.dumps(c_packet.to_dict())
+                    client_conn.send(bytes(packet_json, "utf-8"))
                     c_packet.clear_flag("ACK")
                     state = C_STATES[5]
 
