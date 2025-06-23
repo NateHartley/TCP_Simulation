@@ -17,4 +17,4 @@ Client terminal<br>
 `python3 client.py`
 
 > [!IMPORTANT] 
-> Server file must be running before the client file is ran.
+> Server file must be run before client.
